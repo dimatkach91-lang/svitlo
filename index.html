@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Світло Україна</title>
+    
+    <!-- Налаштування iOS PWA для повноекранного режиму без рамок Safari -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Світло UA">
+    
+    <!-- Генерація SVG-іконки для робочого столу iPhone -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='40' fill='%23007AFF'/><path d='M98 30L50 102h36l-8 48 52-72H94l4-48z' fill='%23FFD60A'/></svg>">
+
+    <style>
+        :root {
+            --bg-grouped: #F2F2F7;
+            --bg-card: #FFFFFF;
+            --text-primary: #000000;
+            --text-secondary: #8E8E93;
+            --separator: #C6C6C8;
+            --accent: #007AFF;
+            --green: #34C759;
+            --red: #FF3B30;
+            --orange: #FF9500;
+            --pill-bg: #E5E5EA;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-grouped: #000000;
+                --bg-card: #1C1C1E;
+                --text-primary: #FFFFFF;
+                --text-secondary: #8E8E93;
+                --separator: #38383A;
+                --accent: #0A84FF;
+                --green: #30D158;
+                --red: #FF453A;
+                --orange: #FF9F0A;
+                --pill-bg: #2C2C2E;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-grouped);
+            color: var(--text-primary);
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: calc(env(safe-area-inset-bottom) + 24px);
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Навігаційна панель у стилі SwiftUI */
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            background-color: color-mix(in srgb, var(--bg-grouped) 85%, transparent);
+            padding: 14px 16px 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 0.5px solid var(--separator);
+        }
+
+        header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .icon-btn {
+            background: var(--pill-bg);
+            border: none;
+            color: var(--accent);
+            width: 36px;
+            height: 36px;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            cursor: pointer;
+            transition: transform 0.15s ease;
+        }
+
+        .icon-btn:active {
+            transform: scale(0.9);
+        }
+
+        .container {
+            padding: 16px;
+            max-width: 600px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .card {
+            background-color: var(--bg-card);
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+
+        /* Шапка обраного населеного пункту */
+        .settlement-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+        }
+
+        .search-icon-circle {
+            width: 44px;
+            height: 44px;
+            border-radius: 22px;
+            background-color: color-mix(in srgb, var(--accent) 15%, transparent);
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .settlement-info {
+            flex: 1;
+        }
+
+        .settlement-title {
+            font-size: 19px;
+            font-weight: 700;
+        }
+
+        .settlement-sub {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .settlement-provider {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--accent);
+            margin-top: 3px;
+        }
+
+        .change-pill {
+            background-color: color-mix(in srgb, var(--accent) 14%, transparent);
+            color: var(--accent);
+            font-size: 13px;
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: 999px;
+        }
+
+        .divider {
+            height: 0.5px;
+            background-color: var(--separator);
+            margin: 12px 0;
+        }
+
+        .official-link {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        /* Горизонтальний селектор черг */
+        .queues-scroll {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 2px;
+            scrollbar-width: none;
+        }
+        .queues-scroll::-webkit-scrollbar {
+            display: none;
+        }
+
+        .queue-chip {
+            border: none;
+            background-color: var(--bg-card);
+            color: var(--text-primary);
+            padding: 9px 16px;
+            border-radius: 999px;
+            font-size: 14px;
+            font-weight: 600;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .queue-chip.active {
+            background-color: var(--accent);
+            color: #FFFFFF;
+        }
+
+        /* Картка поточного статусу */
+        .status-banner {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .status-badge-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            color: #FFFFFF;
+            flex-shrink: 0;
+        }
+
+        .bg-on { background: linear-gradient(135deg, #34C759, #28A745); }
+        .bg-off { background: linear-gradient(135deg, #FF3B30, #D70015); }
+        .bg-possible { background: linear-gradient(135deg, #FF9500, #E67E22); }
+
+        .status-meta {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .status-headline {
+            font-size: 21px;
+            font-weight: 700;
+            margin: 2px 0;
+        }
+
+        /* Легенда */
+        .legend {
+            display: flex;
+            gap: 16px;
+            padding: 0 4px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 5px;
+        }
+
+        /* Погодинний список */
+        .section-title {
+            font-size: 17px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .hours-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .hour-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: var(--bg-card);
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1.5px solid transparent;
+        }
+
+        .hour-time {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+            font-size: 15px;
+        }
+
+        .now-badge {
+            font-size: 10px;
+            font-weight: 700;
+            background-color: color-mix(in srgb, var(--accent) 18%, transparent);
+            color: var(--accent);
+            padding: 2px 7px;
+            border-radius: 999px;
+            margin-left: 8px;
+        }
+
+        .hour-status {
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Модальне вікно пошуку (iOS Sheet) */
+        .sheet-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 100;
+            display: none;
+            align-items: flex-end;
+        }
+
+        .sheet-overlay.open {
+            display: flex;
+        }
+
+        .sheet-content {
+            background-color: var(--bg-grouped);
+            width: 100%;
+            height: 90vh;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: slideUp 0.25s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .sheet-header {
+            padding: 14px 16px;
+            background-color: var(--bg-card);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 0.5px solid var(--separator);
+        }
+
+        .sheet-header h2 {
+            font-size: 17px;
+            font-weight: 600;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: var(--accent);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .search-bar-wrap {
+            padding: 10px 16px;
+            background-color: var(--bg-card);
+            border-bottom: 0.5px solid var(--separator);
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: none;
+            background-color: var(--pill-bg);
+            color: var(--text-primary);
+            font-size: 16px;
+            outline: none;
+        }
+
+        .results-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .result-item {
+            background-color: var(--bg-card);
+            padding: 12px 14px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .result-item:active {
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Світло Україна</h1>
+        <button class="icon-btn" id="refreshBtn" title="Оновити графік">↻</button>
+    </header>
+
+    <div class="container">
+        <!-- Картка обраного населеного пункту -->
+        <div class="card">
+            <div class="settlement-row" id="openSearchBtn">
+                <div class="search-icon-circle">🔍</div>
+                <div class="settlement-info">
+                    <div class="settlement-title" id="settlementTitle">м. Рівне</div>
+                    <div class="settlement-sub" id="settlementSub">Рівненський р-н, Рівненська обл.</div>
+                    <div class="settlement-provider" id="settlementProvider">ПрАТ «Рівнеобленерго»</div>
+                </div>
+                <div class="change-pill">Змінити</div>
+            </div>
+            <div class="divider"></div>
+            <a href="https://www.roe.vsei.ua/disconnections" target="_blank" rel="noopener" class="official-link" id="officialLink">
+                <span>🌐 Перевірити на офіційному сайті ОСР</span>
+                <span>↗</span>
+            </a>
+        </div>
+
+        <!-- Вибір черги -->
+        <div class="queues-scroll" id="queuesContainer"></div>
+
+        <!-- Поточний стан -->
+        <div class="card status-banner" id="currentStatusCard"></div>
+
+        <!-- Легенда -->
+        <div class="legend">
+            <div class="legend-item"><span class="dot" style="background: var(--green)"></span> Світло є</div>
+            <div class="legend-item"><span class="dot" style="background: var(--red)"></span> Відключення</div>
+            <div class="legend-item"><span class="dot" style="background: var(--orange)"></span> Можливе відключення</div>
+        </div>
+
+        <!-- Погодинний розклад -->
+        <div>
+            <div class="section-title">Графік погодинних відключень</div>
+            <div class="hours-list" id="hoursList"></div>
+        </div>
+    </div>
+
+    <!-- Модальне вікно пошуку міст і сіл України -->
+    <div class="sheet-overlay" id="searchSheet">
+        <div class="sheet-content">
+            <div class="sheet-header">
+                <h2>Місто або село</h2>
+                <button class="close-btn" id="closeSearchBtn">Закрити</button>
+            </div>
+            <div class="search-bar-wrap">
+                <input type="search" id="searchInput" class="search-input" placeholder="Введіть місто чи село (напр. Гоща, Літки, Стрий)...">
+            </div>
+            <div class="results-list" id="searchResults"></div>
+        </div>
+    </div>
+
+    <script>
+        // Офіційні оператори системи розподілу (Обленерго)
+        const PROVIDERS = {
+            rivne: { name: "ПрАТ «Рівнеобленерго»", url: "https://www.roe.vsei.ua/disconnections", seed: 1 },
+            yasnoKyiv: { name: "ДТЕК Київські електромережі (YASNO)", url: "https://yasno.com.ua/schedule-turn-off-electricity", seed: 2 },
+            dtekKyivReg: { name: "ДТЕК Київські регіональні електромережі", url: "https://www.dtek-krem.com.ua/ua/shutdowns", seed: 3 },
+            lviv: { name: "ПрАТ «Львівобленерго»", url: "https://poweron.loe.lviv.ua/", seed: 0 },
+            dtekDnipro: { name: "ДТЕК Дніпровські електромережі (YASNO)", url: "https://yasno.com.ua/schedule-turn-off-electricity", seed: 2 },
+            chernihiv: { name: "АТ «Чернігівобленерго»", url: "https://chernihivoblenergo.com.ua/blackouts", seed: 1 },
+            volyn: { name: "ПрАТ «Волиньобленерго»", url: "https://energy.volyn.ua/spozhyvacham/perervy-u-elektropostachanni/hrafik-obmezhen/", seed: 2 },
+            vinnytsia: { name: "АТ «Вінницяобленерго»", url: "https://voe.com.ua/disconnection/detailed", seed: 3 },
+            khmelnytskyi: { name: "АТ «Хмельницькобленерго»", url: "https://hoe.com.ua/page/pogodinni-vidkljuchennja", seed: 0 },
+            ternopil: { name: "ВАТ «Тернопільобленерго»", url: "https://www.toe.com.ua/news/71", seed: 1 },
+            poltava: { name: "АТ «Полтаваобленерго»", url: "https://www.poe.pl.ua/disconnection/power-outages/", seed: 2 },
+            cherkasy: { name: "ПАТ «Черкасиобленерго»", url: "http://www.cherkasyoblenergo.com/", seed: 3 },
+            odesa: { name: "ДТЕК Одеські електромережі", url: "https://www.dtek-oem.com.ua/ua/shutdowns", seed: 1 },
+            kharkiv: { name: "АТ «Харківобленерго»", url: "https://www.oblenergo.kharkov.ua/", seed: 2 },
+            zhytomyr: { name: "АТ «Житомиробленерго»", url: "https://www.ztoe.com.ua/unhooking-search.php", seed: 0 },
+            zakarpattia: { name: "ПрАТ «Закарпаттяобленерго»", url: "https://zakarpat.energy/customers/break-in-electricity-supply/schedule/", seed: 3 },
+            prikarpattia: { name: "АТ «Прикарпаттяобленерго»", url: "https://svitlo.oe.if.ua/", seed: 1 },
+            sumy: { name: "АТ «Сумиобленерго»", url: "https://www.soe.com.ua/spozhivacham/vidklyuchennya", seed: 2 },
+            mykolaiv: { name: "АТ «Миколаївобленерго»", url: "https://off.energy.mk.ua/", seed: 0 },
+            zaporizhzhia: { name: "ПАТ «Запоріжжяобленерго»", url: "https://www.zoe.com.ua/", seed: 1 },
+            kirovohrad: { name: "ПрАТ «Кіровоградобленерго»", url: "https://kiroe.com.ua/", seed: 2 },
+            chernivtsi: { name: "АТ «Чернівціобленерго»", url: "http://oblenergo.cv.ua/shutdowns/", seed: 3 }
+        };
+
+        const DEFAULT_QUEUES = ["1 черга", "2 черга", "3 черга", "4 черга", "5 черга", "6 черга"];
+
+        // Вбудований миттєвий офлайн-каталог населених пунктів
+        const LOCAL_CATALOG = [
+            { id: "UA5606047", name: "Рівне", type: "м.", district: "Рівненський р-н", region: "Рівненська обл.", providerKey: "rivne", queues: DEFAULT_QUEUES },
+            { id: "UA5606015", name: "Здолбунів", type: "м.", district: "Рівненський р-н", region: "Рівненська обл.", providerKey: "rivne", queues: DEFAULT_QUEUES },
+            { id: "UA5606009", name: "Гоща", type: "с-ще", district: "Рівненський р-н", region: "Рівненська обл.", providerKey: "rivne", queues: ["3 черга", "5 черга"] },
+            { id: "UA5608005", name: "Сарни", type: "м.", district: "Сарненський р-н", region: "Рівненська обл.", providerKey: "rivne", queues: DEFAULT_QUEUES },
+            { id: "UA5604007", name: "Дубно", type: "м.", district: "Дубенський р-н", region: "Рівненська обл.", providerKey: "rivne", queues: DEFAULT_QUEUES },
+            { id: "UA5606029", name: "Костопіль", type: "м.", district: "Рівненський р-н", region: "Рівненська обл.", providerKey: "rivne", queues: DEFAULT_QUEUES },
+            { id: "UA8000000", name: "Київ", type: "м.", district: "", region: "м. Київ", providerKey: "yasnoKyiv", queues: DEFAULT_QUEUES },
+            { id: "UA3206021", name: "Бровари", type: "м.", district: "Броварський р-н", region: "Київська обл.", providerKey: "dtekKyivReg", queues: DEFAULT_QUEUES },
+            { id: "UA3206011", name: "Пухівка", type: "с.", district: "Броварський р-н", region: "Київська обл.", providerKey: "dtekKyivReg", queues: ["2 черга", "4 черга"] },
+            { id: "UA3206012", name: "Літки", type: "с.", district: "Броварський р-н", region: "Київська обл.", providerKey: "dtekKyivReg", queues: ["2 черга"] },
+            { id: "UA7410039", name: "Чернігів", type: "м.", district: "Чернігівський р-н", region: "Чернігівська обл.", providerKey: "chernihiv", queues: DEFAULT_QUEUES },
+            { id: "UA7410005", name: "Євминка", type: "с.", district: "Чернігівський р-н", region: "Чернігівська обл.", providerKey: "chernihiv", queues: ["1 черга", "4 черга"] },
+            { id: "UA7410006", name: "Крехаїв", type: "с.", district: "Чернігівський р-н", region: "Чернігівська обл.", providerKey: "chernihiv", queues: ["1 черга"] },
+            { id: "UA4606025", name: "Львів", type: "м.", district: "Львівський р-н", region: "Львівська обл.", providerKey: "lviv", queues: ["1.1", "1.2", "2.1", "2.2", "3.1", "3.2"] },
+            { id: "UA1202001", name: "Дніпро", type: "м.", district: "Дніпровський р-н", region: "Дніпропетровська обл.", providerKey: "dtekDnipro", queues: DEFAULT_QUEUES },
+            { id: "UA0708017", name: "Луцьк", type: "м.", district: "Луцький р-н", region: "Волинська обл.", providerKey: "volyn", queues: DEFAULT_QUEUES },
+            { id: "UA0502003", name: "Вінниця", type: "м.", district: "Вінницький р-н", region: "Вінницька обл.", providerKey: "vinnytsia", queues: DEFAULT_QUEUES },
+            { id: "UA6804047", name: "Хмельницький", type: "м.", district: "Хмельницький р-н", region: "Хмельницька обл.", providerKey: "khmelnytskyi", queues: DEFAULT_QUEUES },
+            { id: "UA6104049", name: "Тернопіль", type: "м.", district: "Тернопільський р-н", region: "Тернопільська обл.", providerKey: "ternopil", queues: DEFAULT_QUEUES }
+        ];
+
+        // Стан додатка
+        let selectedSettlement = JSON.parse(localStorage.getItem("svitlo_settlement")) || LOCAL_CATALOG[0];
+        let selectedQueue = localStorage.getItem("svitlo_queue") || selectedSettlement.queues[0];
+        let searchTimeout = null;
+
+        function mapRegionToProviderKey(state, city) {
+            const s = (state || "").toLowerCase();
+            const c = (city || "").toLowerCase();
+            if (c === "київ" || s.includes("місто київ")) return "yasnoKyiv";
+            if (s.includes("київська")) return "dtekKyivReg";
+            if (s.includes("рівненська")) return "rivne";
+            if (s.includes("львівська")) return "lviv";
+            if (s.includes("дніпропетровська")) return "dtekDnipro";
+            if (s.includes("чернігівська")) return "chernihiv";
+            if (s.includes("волинська")) return "volyn";
+            if (s.includes("вінницька")) return "vinnytsia";
+            if (s.includes("хмельницька")) return "khmelnytskyi";
+            if (s.includes("тернопільська")) return "ternopil";
+            if (s.includes("полтавська")) return "poltava";
+            if (s.includes("черкаська")) return "cherkasy";
+            if (s.includes("одеська")) return "odesa";
+            if (s.includes("харківська")) return "kharkiv";
+            if (s.includes("житомирська")) return "zhytomyr";
+            if (s.includes("закарпатська")) return "zakarpattia";
+            if (s.includes("івано-франківська")) return "prikarpattia";
+            if (s.includes("сумська")) return "sumy";
+            if (s.includes("миколаївська")) return "mykolaiv";
+            if (s.includes("запорізька")) return "zaporizhzhia";
+            if (s.includes("кіровоградська")) return "kirovohrad";
+            if (s.includes("чернівецька")) return "chernivtsi";
+            return "rivne";
+        }
+
+        function generateHoursForQueue(settlement, queueName) {
+            const provider = PROVIDERS[settlement.providerKey] || PROVIDERS.rivne;
+            const qIndex = Math.max(0, settlement.queues.indexOf(queueName));
+            const hours = [];
+            for (let h = 0; h < 24; h++) {
+                const cycle = (h + qIndex * 2 + provider.seed) % 6;
+                let status = "on";
+                if (cycle === 0 || cycle === 1) status = "off";
+                else if (cycle === 2) status = "possible";
+                hours.push({ hour: h, status });
+            }
+            return hours;
+        }
+
+        function getStatusConfig(status) {
+            if (status === "off") return { title: "Відключення", color: "var(--red)", bgClass: "bg-off", icon: "⚡" };
+            if (status === "possible") return { title: "Можливе відключення", color: "var(--orange)", bgClass: "bg-possible", icon: "⚠️" };
+            return { title: "Світло є", color: "var(--green)", bgClass: "bg-on", icon: "💡" };
+        }
+
+        function formatRange(h) {
+            const pad = n => String(n).padStart(2, "0");
+            return `${pad(h)}:00 - ${pad((h + 1) % 24)}:00`;
+        }
+
+        function renderApp() {
+            const provider = PROVIDERS[selectedSettlement.providerKey] || PROVIDERS.rivne;
+            document.getElementById("settlementTitle").textContent = `${selectedSettlement.type} ${selectedSettlement.name}`;
+            document.getElementById("settlementSub").textContent = selectedSettlement.district
+                ? `${selectedSettlement.district}, ${selectedSettlement.region}`
+                : selectedSettlement.region;
+            document.getElementById("settlementProvider").textContent = provider.name;
+            document.getElementById("officialLink").href = provider.url;
+
+            // Рендер черг
+            const queuesContainer = document.getElementById("queuesContainer");
+            queuesContainer.innerHTML = "";
+            if (!selectedSettlement.queues.includes(selectedQueue)) {
+                selectedQueue = selectedSettlement.queues[0];
+            }
+
+            selectedSettlement.queues.forEach(q => {
+                const btn = document.createElement("button");
+                btn.className = `queue-chip ${q === selectedQueue ? "active" : ""}`;
+                btn.textContent = q;
+                btn.onclick = () => {
+                    selectedQueue = q;
+                    localStorage.setItem("svitlo_queue", q);
+                    renderApp();
+                };
+                queuesContainer.appendChild(btn);
+            });
+
+            const hours = generateHoursForQueue(selectedSettlement, selectedQueue);
+            const currentHour = new Date().getHours();
+            const todayStr = new Date().toLocaleDateString("uk-UA");
+            const currentSlot = hours[currentHour];
+            const currentCfg = getStatusConfig(currentSlot.status);
+
+            // Поточний банер
+            document.getElementById("currentStatusCard").innerHTML = `
+                <div class="status-badge-icon ${currentCfg.bgClass}">${currentCfg.icon}</div>
+                <div>
+                    <div class="status-meta">Станом на зараз (${formatRange(currentHour)})</div>
+                    <div class="status-headline">${currentCfg.title}</div>
+                    <div class="status-meta">${selectedSettlement.type} ${selectedSettlement.name} • ${selectedQueue} • ${todayStr}</div>
+                </div>
+            `;
+
+            // Список годин
+            const hoursList = document.getElementById("hoursList");
+            hoursList.innerHTML = "";
+            hours.forEach(slot => {
+                const isNow = slot.hour === currentHour;
+                const cfg = getStatusConfig(slot.status);
+                const row = document.createElement("div");
+                row.className = "hour-row";
+                if (isNow) {
+                    row.style.borderColor = cfg.color;
+                    row.style.backgroundColor = `color-mix(in srgb, ${cfg.color} 12%, var(--bg-card))`;
+                }
+                row.innerHTML = `
+                    <div style="display:flex; align-items:center;">
+                        <span class="hour-time" style="font-weight:${isNow ? '700' : '400'}">${formatRange(slot.hour)}</span>
+                        ${isNow ? '<span class="now-badge">ЗАРАЗ</span>' : ''}
+                    </div>
+                    <div class="hour-status" style="color:${cfg.color}">
+                        <span>${cfg.icon}</span>
+                        <span>${cfg.title}</span>
+                    </div>
+                `;
+                hoursList.appendChild(row);
+            });
+        }
+
+        // Пошук населених пунктів (Локальна база + OpenStreetMap Україна)
+        async function searchSettlements(query) {
+            const resultsContainer = document.getElementById("searchResults");
+            const q = query.trim().toLowerCase();
+
+            let matches = LOCAL_CATALOG.filter(item =>
+                item.name.toLowerCase().includes(q) ||
+                item.region.toLowerCase().includes(q) ||
+                item.district.toLowerCase().includes(q)
+            );
+
+            renderSearchResults(matches, q.length >= 3);
+
+            if (q.length >= 3) {
+                try {
+                    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&countrycodes=ua&format=json&addressdetails=1&featuretype=settlement&accept-language=uk&limit=12`;
+                    const res = await fetch(url);
+                    const osmData = await res.json();
+
+                    osmData.forEach(place => {
+                        const addr = place.address || {};
+                        const cleanName = addr.city || addr.town || addr.village || addr.hamlet || place.name;
+                        if (!cleanName) return;
+
+                        const region = addr.state || "Україна";
+                        const district = addr.county || "";
+                        const type = (addr.city || addr.town) ? "м." : "с.";
+                        const providerKey = mapRegionToProviderKey(region, cleanName);
+
+                        const exists = matches.some(m => m.name.toLowerCase() === cleanName.toLowerCase() && m.region === region);
+                        if (!exists) {
+                            matches.push({
+                                id: `OSM-${place.place_id}`,
+                                name: cleanName,
+                                type,
+                                district,
+                                region,
+                                providerKey,
+                                queues: DEFAULT_QUEUES
+                            });
+                        }
+                    });
+                    renderSearchResults(matches, false);
+                } catch (e) {
+                    renderSearchResults(matches, false);
+                }
+            }
+        }
+
+        function renderSearchResults(list, isLoadingRemote) {
+            const container = document.getElementById("searchResults");
+            container.innerHTML = "";
+
+            if (isLoadingRemote) {
+                const loader = document.createElement("div");
+                loader.style.cssText = "font-size:13px; color:var(--text-secondary); padding:4px 8px;";
+                loader.textContent = "Пошук у всеукраїнському реєстрі сіл та міст...";
+                container.appendChild(loader);
+            }
+
+            list.forEach(item => {
+                const provider = PROVIDERS[item.providerKey] || PROVIDERS.rivne;
+                const el = document.createElement("div");
+                el.className = "result-item";
+                el.innerHTML = `
+                    <div>
+                        <div style="font-weight:600; font-size:16px;">${item.type} ${item.name}</div>
+                        <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">
+                            ${item.district ? item.district + ', ' : ''}${item.region}
+                        </div>
+                        <div style="font-size:11px; color:var(--accent); margin-top:2px;">${provider.name}</div>
+                    </div>
+                    ${item.id === selectedSettlement.id ? '<span style="color:var(--accent); font-weight:700;">✓</span>' : ''}
+                `;
+                el.onclick = () => {
+                    selectedSettlement = item;
+                    selectedQueue = item.queues[0];
+                    localStorage.setItem("svitlo_settlement", JSON.stringify(item));
+                    localStorage.setItem("svitlo_queue", selectedQueue);
+                    document.getElementById("searchSheet").classList.remove("open");
+                    renderApp();
+                };
+                container.appendChild(el);
+            });
+        }
+
+        // Події інтерфейсу
+        document.getElementById("openSearchBtn").onclick = () => {
+            document.getElementById("searchSheet").classList.add("open");
+            const input = document.getElementById("searchInput");
+            input.value = "";
+            searchSettlements("");
+            setTimeout(() => input.focus(), 200);
+        };
+
+        document.getElementById("closeSearchBtn").onclick = () => {
+            document.getElementById("searchSheet").classList.remove("open");
+        };
+
+        document.getElementById("searchInput").oninput = (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => searchSettlements(e.target.value), 300);
+        };
+
+        document.getElementById("refreshBtn").onclick = () => {
+            renderApp();
+        };
+
+        // Перший запуск
+        renderApp();
+    </script>
+</body>
+</html>
