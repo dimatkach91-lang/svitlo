@@ -1,0 +1,43 @@
+name: Build SvitloUA IPA
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    runs-on: macos-14
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode Project
+        run: xcodegen generate
+
+      - name: Build Unsigned Release App
+        run: |
+          xcodebuild clean build \
+            -project SvitloUA.xcodeproj \
+            -scheme SvitloUA \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Package into .ipa
+        run: |
+          mkdir -p Payload
+          cp -r build/Build/Products/Release-iphoneos/SvitloUA.app Payload/
+          zip -r SvitloUA.ipa Payload
+
+      - name: Upload Ready .ipa Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SvitloUA-iOS-IPA
+          path: SvitloUA.ipa
