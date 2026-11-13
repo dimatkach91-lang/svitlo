@@ -1,0 +1,36 @@
+name: SvitloUA
+options:
+  bundleIdPrefix: ua.svitlo
+  deploymentTarget:
+    iOS: "17.0"
+
+targets:
+  SvitloUA:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources/App
+      - path: Sources/Shared
+    info:
+      path: Sources/App/Info.plist
+      properties:
+        CFBundleDisplayName: Світло UA
+        UILaunchScreen: {}
+        NSSupportsLiveActivities: true
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+    dependencies:
+      - target: SvitloWidgetExtension
+
+  SvitloWidgetExtension:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Sources/Widget
+      - path: Sources/Shared
+    info:
+      path: Sources/Widget/Info.plist
+      properties:
+        CFBundleDisplayName: Svitlo Island
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
